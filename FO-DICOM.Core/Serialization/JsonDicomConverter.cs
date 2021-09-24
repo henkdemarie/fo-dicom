@@ -40,6 +40,7 @@ namespace FellowOakDicom.Serialization
 
         public override DicomDataset[] Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
+            var originalDepth = reader.CurrentDepth;
             var datasetList = new List<DicomDataset>();
             if (reader.TokenType != JsonTokenType.StartArray)
             {
@@ -47,7 +48,7 @@ namespace FellowOakDicom.Serialization
             }
             reader.Read();
             var conv = new DicomJsonConverter(writeTagsAsKeywords: _writeTagsAsKeywords);
-            while (reader.TokenType != JsonTokenType.EndArray)
+            while (reader.TokenType != JsonTokenType.EndArray && reader.CurrentDepth != originalDepth)
             {
                 var ds = conv.Read(ref reader, typeToConvert, options);
                 datasetList.Add(ds);
@@ -159,13 +160,14 @@ namespace FellowOakDicom.Serialization
 
         private DicomDataset ReadJsonDataset(ref Utf8JsonReader reader)
         {
+            var originalDepth = reader.CurrentDepth;
             var dataset = _autoValidate
                 ? new DicomDataset()
                 : new DicomDataset().NotValidated();
             if (reader.TokenType != JsonTokenType.StartObject) { return null; }
             reader.Read();
 
-            while (reader.TokenType != JsonTokenType.EndObject)
+            while (reader.TokenType != JsonTokenType.EndObject && reader.CurrentDepth != originalDepth)
             {
                 Assume(ref reader, JsonTokenType.PropertyName);
                 var tagstr = reader.GetString();
